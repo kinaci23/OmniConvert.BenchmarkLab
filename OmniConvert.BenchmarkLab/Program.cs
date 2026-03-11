@@ -14,20 +14,16 @@ const string outputFolder = @"C:\Users\Arda\Desktop\OmniConvertLab\BenchmarkOutp
 Console.OutputEncoding = Encoding.UTF8;
 Console.Title = "OmniConvert.BenchmarkLab";
 
+Console.WriteLine(new string('=', 70));
+Console.WriteLine("OmniConvert BenchmarkLab");
+Console.WriteLine(new string('=', 70));
 Console.WriteLine($"Current Directory : {Directory.GetCurrentDirectory()}");
 Console.WriteLine($"Raster Inputs     : {rasterInputsFolder}");
 Console.WriteLine($"Output Folder     : {outputFolder}");
+Console.WriteLine(new string('=', 70));
 Console.WriteLine();
 
 Directory.CreateDirectory(outputFolder);
-
-var profile = ConversionProfile.VisualDefault with
-{
-    Name = "RASTER_VISUAL_PROFILE",
-    Dpi = 300,
-    ColorMode = TargetColorMode.Rgb24Bit,
-    Compression = TiffCompressionKind.Lzw
-};
 
 var datasetLoader = new InputDatasetLoader();
 var samples = datasetLoader.LoadRasterSamples(rasterInputsFolder);
@@ -35,6 +31,20 @@ var samples = datasetLoader.LoadRasterSamples(rasterInputsFolder);
 if (samples.Count == 0)
 {
     Console.WriteLine($"[HATA] Input dataset boş: {rasterInputsFolder}");
+    return;
+}
+
+var scenarioFactory = new ScenarioFactory();
+var scenarios = scenarioFactory.CreateRasterScenarios(
+    samples,
+    BuiltInProfiles.RasterMatrixProfiles,
+    outputFolder,
+    warmupRuns: 3,
+    measuredRuns: 5);
+
+if (scenarios.Count == 0)
+{
+    Console.WriteLine("[HATA] Benchmark scenario üretilemedi.");
     return;
 }
 
@@ -50,43 +60,28 @@ var reporter = new ConsoleReporter();
 Console.WriteLine("Dataset benchmark başlıyor...");
 Console.WriteLine();
 
-foreach (var sample in samples)
+foreach (var scenario in scenarios)
 {
-    string outputPath = Path.Combine(
-        outputFolder,
-        $"{Path.GetFileNameWithoutExtension(sample.Name)}_benchmark_output.tiff");
-
-    var request = new ConversionRequest
-    {
-        ScenarioName = $"Raster | {sample.Name} | Visual | LZW | 300 DPI",
-        SourceType = sample.SourceType,
-        InputPath = sample.FullPath,
-        OutputPath = outputPath,
-        Profile = profile,
-        PageIndex = null
-    };
-
-    var scenario = new BenchmarkScenario
-    {
-        Name = $"Raster Benchmark - {sample.Name}",
-        Request = request,
-        WarmupRuns = 3,
-        MeasuredRuns = 5
-    };
-
+    var request = scenario.Request;
     var pipeline = registry.Resolve(request);
 
-    Console.WriteLine($"Örnek dosya      : {sample.Name}");
-    Console.WriteLine($"Kategori         : {sample.Category}");
-    Console.WriteLine($"Not              : {sample.Notes}");
-    Console.WriteLine($"Input Path       : {sample.FullPath}");
-    Console.WriteLine($"Output Base Path : {outputPath}");
-    Console.WriteLine($"Seçilen Pipeline : {pipeline.Name}");
     Console.WriteLine();
+    Console.WriteLine(new string('-', 70));
+    Console.WriteLine($"Scenario          : {scenario.Name}");
+    Console.WriteLine($"Input File        : {Path.GetFileName(request.InputPath)}");
+    Console.WriteLine($"Profile           : {request.Profile.Name}");
+    Console.WriteLine($"Intent            : {request.Profile.Intent}");
+    Console.WriteLine($"DPI               : {request.Profile.Dpi}");
+    Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
+    Console.WriteLine($"Compression       : {request.Profile.Compression}");
+    Console.WriteLine($"Output Base Path  : {request.OutputPath}");
+    Console.WriteLine($"Pipeline          : {pipeline.Name}");
+    Console.WriteLine(new string('-', 70));
 
     var results = await runner.RunAsync(pipeline, scenario);
+
     var summary = BenchmarkStatistics.BuildSummary(
-        $"RASTER BENCHMARK RAPORU - {sample.Name}",
+        $"RASTER BENCHMARK RAPORU - {Path.GetFileName(request.InputPath)} - {request.Profile.Name}",
         results);
 
     reporter.PrintSummary(summary);
@@ -113,7 +108,7 @@ var parallelRequest = new ConversionRequest
     SourceType = firstSample.SourceType,
     InputPath = firstSample.FullPath,
     OutputPath = parallelOutputPath,
-    Profile = profile,
+    Profile = BuiltInProfiles.RasterVisualLzw300,
     PageIndex = null
 };
 
