@@ -11,6 +11,8 @@ public sealed record ParallelBenchmarkSummary
 
     public required double TotalElapsedMs { get; init; }
     public required double ThroughputOpsPerSecond { get; init; }
+    public required double Speedup { get; init; }
+    public required double EfficiencyPercent { get; init; }
 
     public required double MinElapsedMs { get; init; }
     public required double MedianElapsedMs { get; init; }

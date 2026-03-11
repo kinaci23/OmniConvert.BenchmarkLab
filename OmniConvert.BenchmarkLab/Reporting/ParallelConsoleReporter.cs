@@ -16,6 +16,8 @@ public sealed class ParallelConsoleReporter
         Console.WriteLine($"Başarısız         : {summary.FailedOperations}");
         Console.WriteLine($"Toplam Süre       : {summary.TotalElapsedMs:N2} ms");
         Console.WriteLine($"Throughput        : {summary.ThroughputOpsPerSecond:N2} ops/sec");
+        Console.WriteLine($"Speedup          : {summary.Speedup:N2}x");
+        Console.WriteLine($"Efficiency       : {summary.EfficiencyPercent:N2} %");
         Console.WriteLine();
 
         Console.WriteLine("SÜRE (ms)");

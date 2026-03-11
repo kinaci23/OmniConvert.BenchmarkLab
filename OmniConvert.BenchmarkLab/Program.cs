@@ -127,7 +127,28 @@ var parallelScenario = new BenchmarkScenario
 
 var parallelPipeline = registry.Resolve(parallelRequest);
 
-foreach (int workerCount in new[] { 1, 2, 4 })
+// 1) Önce baseline al
+Console.WriteLine($"Parallel Test | Örnek dosya: {firstSample.Name} | Workers: 1");
+Console.WriteLine();
+
+var baselineSummary = await parallelRunner.RunAsync(
+    parallelPipeline,
+    parallelScenario,
+    1,
+    0);
+
+baselineSummary = baselineSummary with
+{
+    Speedup = 1.0,
+    EfficiencyPercent = 100.0
+};
+
+parallelReporter.PrintSummary(baselineSummary);
+
+double baselineThroughput = baselineSummary.ThroughputOpsPerSecond;
+
+// 2) Sonra diğer worker sayıları
+foreach (int workerCount in new[] { 2, 4 })
 {
     Console.WriteLine($"Parallel Test | Örnek dosya: {firstSample.Name} | Workers: {workerCount}");
     Console.WriteLine();
@@ -135,7 +156,8 @@ foreach (int workerCount in new[] { 1, 2, 4 })
     var parallelSummary = await parallelRunner.RunAsync(
         parallelPipeline,
         parallelScenario,
-        workerCount);
+        workerCount,
+        baselineThroughput);
 
     parallelReporter.PrintSummary(parallelSummary);
 }

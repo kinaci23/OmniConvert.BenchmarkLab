@@ -16,6 +16,7 @@ public sealed class ParallelBenchmarkRunner
         IConversionPipeline pipeline,
         BenchmarkScenario scenario,
         int workerCount,
+        double baselineThroughputOpsPerSecond,
         CancellationToken cancellationToken = default)
     {
         if (workerCount <= 0)
@@ -56,6 +57,16 @@ public sealed class ParallelBenchmarkRunner
             ? successResults.Count / totalStopwatch.Elapsed.TotalSeconds
             : 0;
 
+        double speedup = workerCount == 1
+            ? 1.0
+            : (baselineThroughputOpsPerSecond > 0
+                ? throughput / baselineThroughputOpsPerSecond
+                : 0);
+
+        double efficiencyPercent = workerCount == 1
+            ? 100.0
+            : (workerCount > 0 ? (speedup / workerCount) * 100.0 : 0);
+
         return new ParallelBenchmarkSummary
         {
             Title = $"{scenario.Name} | Parallel",
@@ -70,6 +81,8 @@ public sealed class ParallelBenchmarkRunner
             P95ElapsedMs = BenchmarkStatistics.Percentile(elapsedValues, 95),
             MaxElapsedMs = elapsedValues.Count > 0 ? elapsedValues.Max() : 0,
             MaxPeakPrivateRamMb = sampler.PeakPrivateBytes / (1024.0 * 1024.0),
+            Speedup = speedup,
+            EfficiencyPercent = efficiencyPercent,
             Errors = failedResults
                 .Select(x => x.ErrorMessage ?? "Bilinmeyen hata")
                 .Concat(successResults
