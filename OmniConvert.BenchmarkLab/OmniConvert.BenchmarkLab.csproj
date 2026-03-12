@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Inputs\pdf\" />
     <Folder Include="Inputs\raster\" />
   </ItemGroup>
 

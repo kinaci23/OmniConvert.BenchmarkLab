@@ -43,6 +43,34 @@ public sealed class InputDatasetLoader
         }).ToList();
     }
 
+    public IReadOnlyList<InputSample> LoadPdfSamples(string folderPath)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            throw new DirectoryNotFoundException($"Input klasörü bulunamadı: {folderPath}");
+        }
+
+        var files = Directory
+            .GetFiles(folderPath, "*.pdf")
+            .OrderBy(path => path)
+            .ToList();
+
+        return files.Select(path =>
+        {
+            string fileName = Path.GetFileName(path);
+            var (Category, Notes) = InferRasterMetadata(fileName);
+
+            return new InputSample
+            {
+                Name = fileName,
+                FullPath = path,
+                SourceType = ConversionSourceType.Pdf,
+                Category = Category,
+                Notes = Notes
+            };
+        }).ToList();
+    }
+
     private static (string Category, string Notes) InferRasterMetadata(string fileName)
     {
         string normalized = fileName.ToLowerInvariant();
@@ -60,5 +88,21 @@ public sealed class InputDatasetLoader
             return ("document-scan", "Belge taraması benzeri örnek");
 
         return ("unknown", "Otomatik sınıflandırılamadı");
+    }
+
+    private static (string Category, string Notes) InferPdfMetadata(string fileName)
+    {
+        string normalized = fileName.ToLowerInvariant();
+
+        if (normalized.Contains("text"))
+            return ("text-document", "Metin ağırlıklı PDF örneği");
+
+        if (normalized.Contains("scan"))
+            return ("scanned-document", "OCR odaklı taranmış PDF örneği");
+
+        if (normalized.Contains("photo") || normalized.Contains("image"))
+            return ("photo-heavy-document", "Görsel/fotoğraf ağırlıklı PDF örneği");
+
+        return ("unknown-pdf", "Otomatik sınıflandırılamadı");
     }
 }
