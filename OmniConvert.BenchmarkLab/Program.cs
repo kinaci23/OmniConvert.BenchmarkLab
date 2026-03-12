@@ -70,12 +70,15 @@ Console.WriteLine();
 
 var registry = new PipelineRegistry(new IConversionPipeline[]
 {
-    new PdfiumPipeline()
+    new MuPdfPipeline(),
 });
 
 var validator = new TiffOutputValidator();
 var runner = new BenchmarkRunner(validator);
 var reporter = new ConsoleReporter();
+
+var csvReporter = new CsvBenchmarkReporter();
+const string csvReportPath = @"C:\Users\Arda\Desktop\OmniConvertLab\BenchmarkOutputs\benchmark_results.csv";
 
 if (false && scenarios.Count > 0)     // ŞUAN RASTER BENCHMARK KAPALI !!!
 {
@@ -107,6 +110,8 @@ if (false && scenarios.Count > 0)     // ŞUAN RASTER BENCHMARK KAPALI !!!
             results);
 
         reporter.PrintSummary(summary);
+
+        
     }
 
     Console.WriteLine("Raster dataset benchmark tamamlandı.");
@@ -120,7 +125,8 @@ Console.WriteLine();
 
 if (pdfScenarios.Count > 0)
 {
-    Console.WriteLine("=== PDF DATASET BENCHMARK (PDFium) ===");
+    var activePdfPipelineName = registry.Resolve(pdfScenarios.First().Request).Name;
+    Console.WriteLine($"=== PDF DATASET BENCHMARK ({activePdfPipelineName}) ===");
     Console.WriteLine();
 
     foreach (var scenario in pdfScenarios)
@@ -148,6 +154,14 @@ if (pdfScenarios.Count > 0)
             results);
 
         reporter.PrintSummary(summary);
+        csvReporter.AppendSummary(
+        csvReportPath,
+        summary,
+        pipeline.Name,
+        Path.GetFileName(request.InputPath),
+        request.Profile.Name,
+        results.LastOrDefault()?.OutputPath ?? request.OutputPath);
+        Console.WriteLine($"[CSV] Summary appended: {csvReportPath}");
     }
 
     Console.WriteLine("PDF dataset benchmark tamamlandı.");

@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspose.PDF" Version="26.2.0" />
     <PackageReference Include="Aspose.Words" Version="26.3.0" />
     <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.10.3" />
+    <PackageReference Include="MuPDF.NativeAssets" Version="1.27.2" />
+    <PackageReference Include="MuPDF.NET" Version="3.2.12" />
     <PackageReference Include="PdfiumViewer" Version="2.13.0" />
     <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
     <PackageReference Include="Syncfusion.DocIORenderer.Net.Core" Version="32.2.9" />
