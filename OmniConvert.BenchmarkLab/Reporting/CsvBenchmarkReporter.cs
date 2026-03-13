@@ -11,8 +11,15 @@ public sealed class CsvBenchmarkReporter
     BenchmarkSummary summary,
     string engineName,
     string inputFile,
+    string inputCategory,
     string profileName,
-    string outputPath)
+    string intent,
+    string pipelineType,
+    string outputPath,
+    int dpi,
+    string colorMode,
+    string compression,
+    string benchmarkStatus)
     {
         bool fileExists = File.Exists(csvPath);
 
@@ -26,7 +33,7 @@ public sealed class CsvBenchmarkReporter
         if (!fileExists)
         {
             writer.WriteLine(
-                "Timestamp;Engine;InputFile;Profile;OutputPath;Title;TotalRuns;SuccessfulRuns;FailedRuns;ErrorCount;MedianElapsedMs;P95ElapsedMs;MedianPeakPrivateRamMb;MedianOutputFileSizeMb");
+                "Timestamp;Engine;InputFile;InputCategory;Profile;Intent;PipelineType;Dpi;ColorMode;Compression;BenchmarkStatus;OutputPath;Title;TotalRuns;SuccessfulRuns;FailedRuns;ErrorCount;MedianElapsedMs;P95ElapsedMs;MedianPeakPrivateRamMb;MedianOutputFileSizeMb");
         }
 
         string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -35,7 +42,14 @@ public sealed class CsvBenchmarkReporter
             Escape(timestamp),
             Escape(engineName),
             Escape(inputFile),
+            Escape(inputCategory),
             Escape(profileName),
+            Escape(intent),
+            Escape(pipelineType),
+            dpi.ToString(CultureInfo.InvariantCulture),
+            Escape(colorMode),
+            Escape(compression),
+            Escape(benchmarkStatus),
             Escape(outputPath),
             Escape(summary.Title),
             summary.TotalRuns.ToString(CultureInfo.InvariantCulture),

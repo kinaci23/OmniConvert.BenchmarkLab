@@ -1,14 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System.Drawing;
+using System.Drawing.Imaging;
 using ImageMagick;
 using OmniConvert.BenchmarkLab.Core;
+using PdfiumViewer;
 
 namespace OmniConvert.BenchmarkLab.Pipelines;
 
-public sealed class MuPdfPipeline : IConversionPipeline
+public sealed class PdfiumPngPipeline : IConversionPipeline
 {
-    private const string MuToolExePath = @"C:\Users\Arda\Desktop\MuPDF\mutool.exe";
-
-    public string Name => "MuPdfPipeline";
+    public string Name => "PdfiumPngPipeline";
 
     public bool CanHandle(ConversionRequest request)
     {
@@ -29,87 +29,33 @@ public sealed class MuPdfPipeline : IConversionPipeline
 
         try
         {
-            if (!File.Exists(MuToolExePath))
-                throw new FileNotFoundException("mutool.exe bulunamadı.", MuToolExePath);
+            using var document = PdfDocument.Load(request.InputPath);
 
-            Console.WriteLine($"[MUPDF] Input     : {request.InputPath}");
-            Console.WriteLine($"[MUPDF] Output    : {finalOutputPath}");
-            Console.WriteLine($"[MUPDF] Profile   : {request.Profile.Name}");
-
-            string tempPattern = Path.Combine(
-                Path.GetTempPath(),
-                $"omniconvert_mupdf_{Guid.NewGuid():N}_%d.png");
-
-            string colorSpace = ResolveColorSpace(request.Profile);
-
-            string arguments =
-                $"draw " +
-                $"-L " +
-                $"-r {request.Profile.Dpi} " +
-                $"-c {colorSpace} " +
-                $"-o \"{tempPattern}\" " +
-                $"\"{request.InputPath}\" " +
-                $"1-N";
-
-            Console.WriteLine($"[MUPDF] Args      : {arguments}");
-
-            var startInfo = new ProcessStartInfo
+            for (int pageIndex = 0; pageIndex < document.PageCount; pageIndex++)
             {
-                FileName = MuToolExePath,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
+                cancellationToken.ThrowIfCancellationRequested();
 
-            using var process = new Process { StartInfo = startInfo };
+                var pageSize = document.PageSizes[pageIndex];
 
-            process.Start();
+                int width = Math.Max(1, (int)Math.Ceiling(pageSize.Width / 72.0 * request.Profile.Dpi));
+                int height = Math.Max(1, (int)Math.Ceiling(pageSize.Height / 72.0 * request.Profile.Dpi));
 
-            Task<string> stdOutputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            Task<string> stdErrorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+                using var renderedImage = document.Render(
+                    pageIndex,
+                    width,
+                    height,
+                    request.Profile.Dpi,
+                    request.Profile.Dpi,
+                    PdfRenderFlags.Annotations);
 
-            await Task.WhenAll(stdOutputTask, stdErrorTask, process.WaitForExitAsync(cancellationToken));
+                using var bitmap = new Bitmap(renderedImage);
 
-            string stdOutput = stdOutputTask.Result;
-            string stdError = stdErrorTask.Result;
+                string tempPngPath = Path.Combine(
+                    Path.GetTempPath(),
+                    $"omniconvert_pdfium_png_{Guid.NewGuid():N}_page_{pageIndex + 1}.png");
 
-            Console.WriteLine($"[MUPDF] ExitCode  : {process.ExitCode}");
-
-            if (!string.IsNullOrWhiteSpace(stdOutput))
-            {
-                Console.WriteLine("[MUPDF] STDOUT:");
-                Console.WriteLine(stdOutput);
-            }
-
-            if (!string.IsNullOrWhiteSpace(stdError))
-            {
-                Console.WriteLine("[MUPDF] STDERR:");
-                Console.WriteLine(stdError);
-            }
-
-            if (process.ExitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"MuPDF process başarısız oldu. ExitCode={process.ExitCode}{Environment.NewLine}{stdError}");
-            }
-
-            string tempDirectory = Path.GetDirectoryName(tempPattern)!;
-            string tempPrefix = Path.GetFileNameWithoutExtension(tempPattern).Replace("%d", string.Empty);
-            string tempExtension = Path.GetExtension(tempPattern);
-
-            string tempBaseName = Path.GetFileNameWithoutExtension(tempPattern).Replace("%d", string.Empty);
-
-            tempFiles = Directory
-                .GetFiles(tempDirectory, "omniconvert_mupdf_*.png", SearchOption.TopDirectoryOnly)
-                .Where(x => Path.GetFileNameWithoutExtension(x).StartsWith(tempBaseName, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(x => ExtractPageNumber(x))
-                .ToList();
-
-            if (tempFiles.Count == 0)
-            {
-                throw new FileNotFoundException("MuPDF geçici PNG çıktıları bulunamadı.");
+                bitmap.Save(tempPngPath, ImageFormat.Png);
+                tempFiles.Add(tempPngPath);
             }
 
             using var mergedFrames = new MagickImageCollection();
@@ -131,9 +77,7 @@ public sealed class MuPdfPipeline : IConversionPipeline
             mergedFrames.Write(finalOutputPath);
 
             if (!File.Exists(finalOutputPath))
-            {
-                throw new FileNotFoundException("MuPDF çıktı dosyasını üretmedi.", finalOutputPath);
-            }
+                throw new FileNotFoundException("Pdfium PNG pipeline çıktı dosyasını üretmedi.", finalOutputPath);
 
             long outputBytes = new FileInfo(finalOutputPath).Length;
 
@@ -177,17 +121,6 @@ public sealed class MuPdfPipeline : IConversionPipeline
                 }
             }
         }
-    }
-
-    private static string ResolveColorSpace(ConversionProfile profile)
-    {
-        return profile.ColorMode switch
-        {
-            TargetColorMode.Binary1Bit => "mono",
-            TargetColorMode.Grayscale8Bit => "gray",
-            TargetColorMode.Rgb24Bit => "rgb",
-            _ => throw new NotSupportedException($"Desteklenmeyen ColorMode: {profile.ColorMode}")
-        };
     }
 
     private static void ApplyColorMode(MagickImage image, ConversionProfile profile)
@@ -260,20 +193,5 @@ public sealed class MuPdfPipeline : IConversionPipeline
             $"{fileNameWithoutExtension}__{pipelineName}__{profileName}__{timestamp}{extension}";
 
         return Path.Combine(directory, finalFileName);
-    }
-
-    private static int ExtractPageNumber(string filePath)
-    {
-        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-        int lastUnderscoreIndex = fileNameWithoutExtension.LastIndexOf('_');
-
-        if (lastUnderscoreIndex < 0)
-            return int.MaxValue;
-
-        string pagePart = fileNameWithoutExtension[(lastUnderscoreIndex + 1)..];
-
-        return int.TryParse(pagePart, out int pageNumber)
-            ? pageNumber
-            : int.MaxValue;
     }
 }

@@ -57,8 +57,8 @@ var pdfScenarios = pdfSamples.Count > 0
     : new List<BenchmarkScenario>();
 
 pdfScenarios = pdfScenarios
-    .Where(x => x.Request.InputPath.Contains("pdf_text_invoice", StringComparison.OrdinalIgnoreCase))
-    .Where(x => x.Request.Profile.Name == "PdfOcrGray300")
+    .Where(x => x.Request.InputPath.Contains("pdf_photo_heavy", StringComparison.OrdinalIgnoreCase))
+    .Where(x => x.Request.Profile.Name == "PdfVisualLzw300")
     .Take(1)
     .ToList();
 
@@ -68,10 +68,10 @@ Console.WriteLine($"PDF sample sayısı    : {pdfSamples.Count}");
 Console.WriteLine($"PDF scenario sayısı  : {pdfScenarios.Count}");
 Console.WriteLine();
 
-var registry = new PipelineRegistry(new IConversionPipeline[]
+var finalPdfPipelines = new IConversionPipeline[]
 {
-    new MuPdfPipeline(),
-});
+    new GhostscriptScaledPipeline()
+};
 
 var validator = new TiffOutputValidator();
 var runner = new BenchmarkRunner(validator);
@@ -88,7 +88,6 @@ if (false && scenarios.Count > 0)     // ŞUAN RASTER BENCHMARK KAPALI !!!
     foreach (var scenario in scenarios)
     {
         var request = scenario.Request;
-        var pipeline = registry.Resolve(request);
 
         Console.WriteLine();
         Console.WriteLine(new string('-', 70));
@@ -100,18 +99,7 @@ if (false && scenarios.Count > 0)     // ŞUAN RASTER BENCHMARK KAPALI !!!
         Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
         Console.WriteLine($"Compression       : {request.Profile.Compression}");
         Console.WriteLine($"Output Base Path  : {request.OutputPath}");
-        Console.WriteLine($"Pipeline          : {pipeline.Name}");
         Console.WriteLine(new string('-', 70));
-
-        var results = await runner.RunAsync(pipeline, scenario);
-
-        var summary = BenchmarkStatistics.BuildSummary(
-            $"RASTER BENCHMARK RAPORU - {Path.GetFileName(request.InputPath)} - {request.Profile.Name}",
-            results);
-
-        reporter.PrintSummary(summary);
-
-        
     }
 
     Console.WriteLine("Raster dataset benchmark tamamlandı.");
@@ -123,48 +111,64 @@ else
 
 Console.WriteLine();
 
+
 if (pdfScenarios.Count > 0)
 {
-    var activePdfPipelineName = registry.Resolve(pdfScenarios.First().Request).Name;
-    Console.WriteLine($"=== PDF DATASET BENCHMARK ({activePdfPipelineName}) ===");
-    Console.WriteLine();
-
-    foreach (var scenario in pdfScenarios)
+    foreach (var pipeline in finalPdfPipelines)
     {
-        var request = scenario.Request;
-        var pipeline = registry.Resolve(request);
-
+        Console.WriteLine($"=== PDF DATASET BENCHMARK ({pipeline.Name}) ===");
         Console.WriteLine();
-        Console.WriteLine(new string('-', 70));
-        Console.WriteLine($"Scenario          : {scenario.Name}");
-        Console.WriteLine($"Input File        : {Path.GetFileName(request.InputPath)}");
-        Console.WriteLine($"Profile           : {request.Profile.Name}");
-        Console.WriteLine($"Intent            : {request.Profile.Intent}");
-        Console.WriteLine($"DPI               : {request.Profile.Dpi}");
-        Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
-        Console.WriteLine($"Compression       : {request.Profile.Compression}");
-        Console.WriteLine($"Output Base Path  : {request.OutputPath}");
-        Console.WriteLine($"Pipeline          : {pipeline.Name}");
-        Console.WriteLine(new string('-', 70));
 
-        var results = await runner.RunAsync(pipeline, scenario);
+        foreach (var scenario in pdfScenarios)
+        {
+            var request = scenario.Request;
 
-        var summary = BenchmarkStatistics.BuildSummary(
-            $"PDF BENCHMARK RAPORU - {Path.GetFileName(request.InputPath)} - {request.Profile.Name}",
-            results);
+            Console.WriteLine();
+            Console.WriteLine(new string('-', 70));
+            Console.WriteLine($"Scenario          : {scenario.Name}");
+            Console.WriteLine($"Input File        : {Path.GetFileName(request.InputPath)}");
+            Console.WriteLine($"Profile           : {request.Profile.Name}");
+            Console.WriteLine($"Intent            : {request.Profile.Intent}");
+            Console.WriteLine($"DPI               : {request.Profile.Dpi}");
+            Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
+            Console.WriteLine($"Compression       : {request.Profile.Compression}");
+            Console.WriteLine($"Output Base Path  : {request.OutputPath}");
+            Console.WriteLine($"Pipeline          : {pipeline.Name}");
+            Console.WriteLine(new string('-', 70));
 
-        reporter.PrintSummary(summary);
-        csvReporter.AppendSummary(
-        csvReportPath,
-        summary,
-        pipeline.Name,
-        Path.GetFileName(request.InputPath),
-        request.Profile.Name,
-        results.LastOrDefault()?.OutputPath ?? request.OutputPath);
-        Console.WriteLine($"[CSV] Summary appended: {csvReportPath}");
+            var results = await runner.RunAsync(pipeline, scenario);
+
+            var summary = BenchmarkStatistics.BuildSummary(
+                $"PDF BENCHMARK RAPORU - {pipeline.Name} - {Path.GetFileName(request.InputPath)} - {request.Profile.Name}",
+                results);
+
+            reporter.PrintSummary(summary);
+
+            string benchmarkStatus = pipeline.Name == "AsposePdfPipeline" ? "Limited" : "Full";
+            string inputCategory = InferInputCategoryFromFileName(request.InputPath);
+            string pipelineType = InferPipelineType(pipeline.Name);
+
+            csvReporter.AppendSummary(
+                csvReportPath,
+                summary,
+                pipeline.Name,
+                Path.GetFileName(request.InputPath),
+                inputCategory,
+                request.Profile.Name,
+                request.Profile.Intent.ToString(),
+                pipelineType,
+                results.LastOrDefault()?.OutputPath ?? request.OutputPath,
+                request.Profile.Dpi,
+                request.Profile.ColorMode.ToString(),
+                request.Profile.Compression.ToString(),
+                benchmarkStatus);
+
+            Console.WriteLine($"[CSV] Summary appended: {csvReportPath}");
+        }
+
+        Console.WriteLine($"PDF dataset benchmark tamamlandı: {pipeline.Name}");
+        Console.WriteLine();
     }
-
-    Console.WriteLine("PDF dataset benchmark tamamlandı.");
 }
 else
 {
@@ -174,3 +178,34 @@ else
 Console.WriteLine();
 Console.WriteLine("=== RASTER PARALLEL BENCHMARK ===");
 Console.WriteLine("[INFO] Raster parallel benchmark bu aşamada devre dışı.");
+
+static string InferInputCategoryFromFileName(string inputPath)
+{
+    string fileName = Path.GetFileNameWithoutExtension(inputPath).ToLowerInvariant();
+
+    if (fileName.Contains("text"))
+        return "TextDocument";
+
+    if (fileName.Contains("scan"))
+        return "ScannedDocument";
+
+    if (fileName.Contains("photo"))
+        return "PhotoHeavyDocument";
+
+    return "Unknown";
+}
+
+static string InferPipelineType(string pipelineName)
+{
+    return pipelineName switch
+    {
+        "GhostscriptPipeline" => "DirectNativeTiff",
+        "GhostscriptScaledPipeline" => "DirectNativeTiff",
+        "PdfiumPipeline" => "RenderThenMerge",
+        "PdfiumPngPipeline" => "RenderThenMerge",
+        "MuPdfPipeline" => "RenderThenMerge",
+        "MuPdfPnmPipeline" => "RenderThenMerge",
+        "AsposePdfPipeline" => "DirectNativeTiff",
+        _ => "Unknown"
+    };
+}
