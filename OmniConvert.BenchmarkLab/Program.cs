@@ -57,9 +57,19 @@ var pdfScenarios = pdfSamples.Count > 0
     : new List<BenchmarkScenario>();
 
 pdfScenarios = pdfScenarios
-    .Where(x => x.Request.InputPath.Contains("pdf_photo_heavy", StringComparison.OrdinalIgnoreCase))
-    .Where(x => x.Request.Profile.Name == "PdfVisualLzw300")
-    .Take(1)
+    .Where(x =>
+        (x.Request.InputPath.Contains("pdf_text_invoice", StringComparison.OrdinalIgnoreCase) &&
+         (x.Request.Profile.Name == "PdfOcrGray300" ||
+          x.Request.Profile.Name == "PdfOcrBinary300" ||
+          x.Request.Profile.Name == "PdfVisualLzw300")) ||
+
+        (x.Request.InputPath.Contains("pdf_scan_invoice", StringComparison.OrdinalIgnoreCase) &&
+         (x.Request.Profile.Name == "PdfOcrGray300" ||
+          x.Request.Profile.Name == "PdfOcrBinary300")) ||
+
+        (x.Request.InputPath.Contains("pdf_photo_heavy", StringComparison.OrdinalIgnoreCase) &&
+         x.Request.Profile.Name == "PdfVisualLzw300")
+    )
     .ToList();
 
 Console.WriteLine($"Raster sample sayısı : {samples.Count}");
@@ -70,7 +80,10 @@ Console.WriteLine();
 
 var finalPdfPipelines = new IConversionPipeline[]
 {
-    new GhostscriptScaledPipeline()
+    new GhostscriptScaledPipeline(),
+    new PdfiumPipeline(),
+    new MuPdfPipeline(),
+    new AsposePdfPipeline()
 };
 
 var validator = new TiffOutputValidator();
@@ -122,6 +135,13 @@ if (pdfScenarios.Count > 0)
         foreach (var scenario in pdfScenarios)
         {
             var request = scenario.Request;
+
+            if (pipeline.Name == "MuPdfPipeline" &&
+                 request.Profile.Name == "PdfOcrBinary300")
+            {
+                Console.WriteLine($"[SKIP] {pipeline.Name} does not support stable binary OCR for {Path.GetFileName(request.InputPath)}");
+                continue;
+            }
 
             Console.WriteLine();
             Console.WriteLine(new string('-', 70));

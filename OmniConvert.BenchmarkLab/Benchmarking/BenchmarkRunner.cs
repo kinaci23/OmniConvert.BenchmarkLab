@@ -44,7 +44,12 @@ public class BenchmarkRunner
             OutputValidationResult? validation = null;
             if (result.Success && _validator is not null)
             {
-                validation = await _validator.ValidateAsync(measuredRequest);
+                var validationRequest = measuredRequest with
+                {
+                    OutputPath = result.OutputPath
+                };
+
+                validation = await _validator.ValidateAsync(validationRequest);
             }
 
             result = result with
