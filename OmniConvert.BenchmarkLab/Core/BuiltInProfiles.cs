@@ -85,6 +85,7 @@ public static class BuiltInProfiles
     };
 
     // PDF OCR PROFILES
+
     public static readonly ConversionProfile PdfOcrGray300 = new()
     {
         Name = "PdfOcrGray300",
@@ -112,6 +113,7 @@ public static class BuiltInProfiles
     };
 
     // PDF VISUAL PROFILES
+
     public static readonly ConversionProfile PdfVisualLzw300 = new()
     {
         Name = "PdfVisualLzw300",
@@ -138,6 +140,49 @@ public static class BuiltInProfiles
         PreferLosslessIntermediate = false
     };
 
+    // OFFICE OCR PROFILES
+
+    public static readonly ConversionProfile OfficeOcrGray300 = new()
+    {
+        Name = "OfficeOcrGray300",
+        Intent = ConversionIntent.Ocr,
+        Dpi = 300,
+        ColorMode = TargetColorMode.Grayscale8Bit,
+        Compression = TiffCompressionKind.Lzw,
+        JpegQuality = null,
+        Threshold = null,
+        PreferDirectPdfBinaryPipeline = false,
+        PreferLosslessIntermediate = true
+    };
+
+    public static readonly ConversionProfile OfficeOcrBinary300 = new()
+    {
+        Name = "OfficeOcrBinary300",
+        Intent = ConversionIntent.Ocr,
+        Dpi = 300,
+        ColorMode = TargetColorMode.Binary1Bit,
+        Compression = TiffCompressionKind.Ccitt4,
+        JpegQuality = null,
+        Threshold = 180,
+        PreferDirectPdfBinaryPipeline = false,
+        PreferLosslessIntermediate = true
+    };
+
+    // OFFICE VISUAL PROFILES
+
+    public static readonly ConversionProfile OfficeVisualLzw300 = new()
+    {
+        Name = "OfficeVisualLzw300",
+        Intent = ConversionIntent.Visual,
+        Dpi = 300,
+        ColorMode = TargetColorMode.Rgb24Bit,
+        Compression = TiffCompressionKind.Lzw,
+        JpegQuality = null,
+        Threshold = null,
+        PreferDirectPdfBinaryPipeline = false,
+        PreferLosslessIntermediate = true
+    };
+
     public static IReadOnlyList<ConversionProfile> RasterMatrixProfiles { get; } =
         new List<ConversionProfile>
         {
@@ -148,7 +193,9 @@ public static class BuiltInProfiles
             RasterOcrBinary300,
             RasterOcrGray200
         };
-    public static IReadOnlyList<ConversionProfile> PdfMatrixProfiles { get; } = new List<ConversionProfile>
+
+    public static IReadOnlyList<ConversionProfile> PdfMatrixProfiles { get; } =
+        new List<ConversionProfile>
         {
             PdfOcrGray300,
             PdfOcrBinary300,
@@ -156,4 +203,11 @@ public static class BuiltInProfiles
             PdfVisualJpeg300
         };
 
+    public static IReadOnlyList<ConversionProfile> OfficeAll { get; } =
+        new List<ConversionProfile>
+        {
+            OfficeOcrGray300,
+            OfficeOcrBinary300,
+            OfficeVisualLzw300
+        };
 }

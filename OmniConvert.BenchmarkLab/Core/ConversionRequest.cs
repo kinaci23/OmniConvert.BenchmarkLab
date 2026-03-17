@@ -4,7 +4,8 @@ public enum ConversionSourceType
 {
     Raster,
     Pdf,
-    Word
+    Word,
+    Excel
 }
 
 public sealed record ConversionRequest

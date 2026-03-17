@@ -71,6 +71,74 @@ public sealed class InputDatasetLoader
         }).ToList();
     }
 
+    public IReadOnlyList<InputSample> LoadWordSamples(string folderPath)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            throw new DirectoryNotFoundException($"Input klasörü bulunamadı: {folderPath}");
+        }
+
+        var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".docx"
+    };
+
+        var files = Directory
+            .GetFiles(folderPath)
+            .Where(path => supportedExtensions.Contains(Path.GetExtension(path)))
+            .OrderBy(path => path)
+            .ToList();
+
+        return files.Select(path =>
+        {
+            string fileName = Path.GetFileName(path);
+            var (category, notes) = InferOfficeMetadata(fileName, ConversionSourceType.Word);
+
+            return new InputSample
+            {
+                Name = fileName,
+                FullPath = path,
+                SourceType = ConversionSourceType.Word,
+                Category = category,
+                Notes = notes
+            };
+        }).ToList();
+    }
+
+    public IReadOnlyList<InputSample> LoadExcelSamples(string folderPath)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            throw new DirectoryNotFoundException($"Input klasörü bulunamadı: {folderPath}");
+        }
+
+        var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".xlsx"
+    };
+
+        var files = Directory
+            .GetFiles(folderPath)
+            .Where(path => supportedExtensions.Contains(Path.GetExtension(path)))
+            .OrderBy(path => path)
+            .ToList();
+
+        return files.Select(path =>
+        {
+            string fileName = Path.GetFileName(path);
+            var (category, notes) = InferOfficeMetadata(fileName, ConversionSourceType.Excel);
+
+            return new InputSample
+            {
+                Name = fileName,
+                FullPath = path,
+                SourceType = ConversionSourceType.Excel,
+                Category = category,
+                Notes = notes
+            };
+        }).ToList();
+    }
+
     private static (string Category, string Notes) InferRasterMetadata(string fileName)
     {
         string normalized = fileName.ToLowerInvariant();
@@ -104,5 +172,33 @@ public sealed class InputDatasetLoader
             return ("photo-heavy-document", "Görsel/fotoğraf ağırlıklı PDF örneği");
 
         return ("unknown-pdf", "Otomatik sınıflandırılamadı");
+    }
+
+    private static (string Category, string Notes) InferOfficeMetadata(
+    string fileName,
+    ConversionSourceType sourceType)
+    {
+        string normalized = fileName.ToLowerInvariant();
+
+        if (sourceType == ConversionSourceType.Word)
+        {
+            if (normalized.Contains("table")) return ("table-heavy-docx", "Tablo ağırlıklı Word belgesi");
+            if (normalized.Contains("image") || normalized.Contains("shape")) return ("image-shape-docx", "Görsel/shape içeren Word belgesi");
+            if (normalized.Contains("unicode") || normalized.Contains("tr")) return ("unicode-docx", "Unicode/Türkçe karakter içeren Word belgesi");
+            if (normalized.Contains("template") || normalized.Contains("corporate")) return ("template-docx", "Kurumsal şablon Word belgesi");
+            return ("text-docx", "Genel Word belgesi");
+        }
+
+        if (sourceType == ConversionSourceType.Excel)
+        {
+            if (normalized.Contains("merged")) return ("merged-cells-xlsx", "Birleştirilmiş hücreler içeren Excel belgesi");
+            if (normalized.Contains("chart")) return ("chart-xlsx", "Grafik içeren Excel belgesi");
+            if (normalized.Contains("printarea")) return ("printarea-xlsx", "Print area ayarlı Excel belgesi");
+            if (normalized.Contains("landscape")) return ("landscape-xlsx", "Yatay sayfa düzenli Excel belgesi");
+            if (normalized.Contains("multisheet")) return ("multisheet-xlsx", "Çok sayfalı/çok sheetli Excel belgesi");
+            return ("table-xlsx", "Genel Excel belgesi");
+        }
+
+        return ("unknown", "Otomatik sınıflandırılamadı");
     }
 }
