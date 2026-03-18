@@ -17,6 +17,8 @@
     <PackageReference Include="MuPDF.NET" Version="3.2.12" />
     <PackageReference Include="PdfiumViewer" Version="2.13.0" />
     <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
+    <PackageReference Include="Spire.Doc" Version="14.3.0" />
+    <PackageReference Include="Spire.XLS" Version="16.2.4" />
     <PackageReference Include="Syncfusion.DocIO.Net.Core" Version="33.1.44" />
     <PackageReference Include="Syncfusion.DocIORenderer.Net.Core" Version="33.1.44" />
     <PackageReference Include="Syncfusion.XlsIO.Net.Core" Version="33.1.44" />

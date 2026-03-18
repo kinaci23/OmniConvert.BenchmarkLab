@@ -75,8 +75,8 @@ var wordScenarios = wordSamples.Count > 0
         wordSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1).ToList()
+        warmupRuns: 1,
+        measuredRuns: 3).ToList()
     : new List<BenchmarkScenario>();
 
 var excelScenarios = excelSamples.Count > 0
@@ -84,8 +84,8 @@ var excelScenarios = excelSamples.Count > 0
         excelSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1).ToList()
+        warmupRuns: 1,
+        measuredRuns: 3).ToList()
     : new List<BenchmarkScenario>();
 
 pdfScenarios = pdfScenarios
@@ -124,19 +124,21 @@ var finalPdfPipelines = new IConversionPipeline[]
 
 var wordPipelines = new List<IConversionPipeline>
 {
-    // Yeni pipeline'lar burada eklenecek
     new LibreOfficeWordPdfBridgePipeline(),
     new AsposeWordsDirectTiffPipeline(),
-    // new SyncfusionWordDirectTiffPipeline() 
+
+    new SpireWordRenderMergePipeline(),
+    new SyncfusionWordDirectTiffPipeline(), 
     new GemBoxWordDirectTiffPipeline()
 };
 
 var excelPipelines = new List<IConversionPipeline>
 {
-    // Yeni pipeline'lar burada eklenecek
     new LibreOfficeExcelPdfBridgePipeline(),
     new AsposeCellsDirectTiffPipeline(),
-    new SyncfusionExcelRenderMergePipeline()
+    new SyncfusionExcelRenderMergePipeline(),
+    new SpireExcelRenderMergePipeline()
+    
 };
 
 Console.WriteLine($"Word pipeline sayısı  : {wordPipelines.Count}");
@@ -291,6 +293,7 @@ if (wordScenarios.Count > 0 && wordPipelines.Count > 0)
             {
                 "AsposeWordsDirectTiffPipeline" => "EvaluationOnly",
                 "LibreOfficeWordPdfBridgePipeline" => "BridgePipeline",
+                "SpireWordRenderMergePipeline" => "Full",
                 "GemBoxWordDirectTiffPipeline" => "EvaluationOnly",
                 "SyncfusionWordDirectTiffPipeline" => "Experimental",
                 _ => "Unknown"
@@ -328,7 +331,6 @@ else
 }
 
 
-/*
 
 
 if (excelScenarios.Count > 0 && excelPipelines.Count > 0)
@@ -368,6 +370,7 @@ if (excelScenarios.Count > 0 && excelPipelines.Count > 0)
                 "AsposeCellsDirectTiffPipeline" => "EvaluationOnly",
                 "LibreOfficeExcelPdfBridgePipeline" => "BridgePipeline",
                 "SyncfusionExcelRenderMergePipeline" => "Full",
+                "SpireExcelRenderMergePipeline" => "Full",
                 _ => "Unknown"
             };
 
@@ -402,7 +405,7 @@ else
     Console.WriteLine("Excel benchmark atlandı.");
 }
 
-*/
+
 
 Console.WriteLine();
 Console.WriteLine("=== RASTER PARALLEL BENCHMARK ===");
@@ -470,6 +473,8 @@ static string InferPipelineType(string pipelineName)
         "SyncfusionWordDirectTiffPipeline" => "RenderThenMerge",
         "SyncfusionExcelRenderMergePipeline" => "RenderThenMerge",
         "GemBoxWordDirectTiffPipeline" => "DirectNativeTiff",
+        "SpireWordRenderMergePipeline" => "RenderThenMerge",
+        "SpireExcelRenderMergePipeline" => "RenderThenMerge",
         _ => "Unknown"
     };
 }
