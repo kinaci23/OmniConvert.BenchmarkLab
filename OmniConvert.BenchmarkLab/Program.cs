@@ -75,8 +75,8 @@ var wordScenarios = wordSamples.Count > 0
         wordSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 1,
-        measuredRuns: 3).ToList()
+        warmupRuns: 0,
+        measuredRuns: 1).ToList()
     : new List<BenchmarkScenario>();
 
 var excelScenarios = excelSamples.Count > 0
@@ -84,8 +84,8 @@ var excelScenarios = excelSamples.Count > 0
         excelSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 1,
-        measuredRuns: 3).ToList()
+        warmupRuns: 0,
+        measuredRuns: 1).ToList()
     : new List<BenchmarkScenario>();
 
 pdfScenarios = pdfScenarios
@@ -114,6 +114,11 @@ Console.WriteLine($"Excel sample sayısı : {excelSamples.Count}");
 Console.WriteLine($"Excel scenario sayısı : {excelScenarios.Count}");
 Console.WriteLine();
 
+var rasterPipelines = new List<IConversionPipeline>
+{
+    new RasterMagickPipeline()
+};
+
 var finalPdfPipelines = new IConversionPipeline[]
 {
     new GhostscriptScaledPipeline(),
@@ -141,8 +146,10 @@ var excelPipelines = new List<IConversionPipeline>
     
 };
 
-Console.WriteLine($"Word pipeline sayısı  : {wordPipelines.Count}");
-Console.WriteLine($"Excel pipeline sayısı : {excelPipelines.Count}");
+Console.WriteLine($"Raster pipeline sayısı : {rasterPipelines.Count}");
+Console.WriteLine($"PDF pipeline sayısı    : {finalPdfPipelines.Length}");
+Console.WriteLine($"Word pipeline sayısı   : {wordPipelines.Count}");
+Console.WriteLine($"Excel pipeline sayısı  : {excelPipelines.Count}");
 
 var validator = new TiffOutputValidator();
 var runner = new BenchmarkRunner(validator);
@@ -151,36 +158,79 @@ var reporter = new ConsoleReporter();
 var csvReporter = new CsvBenchmarkReporter();
 const string csvReportPath = @"C:\Users\Arda\Desktop\OmniConvertLab\BenchmarkOutputs\benchmark_results.csv";
 
-/*
 
-if (false && scenarios.Count > 0)     // ŞUAN RASTER BENCHMARK KAPALI !!!
+
+if (scenarios.Count > 0)
 {
-    Console.WriteLine("=== RASTER DATASET BENCHMARK ===");
-    Console.WriteLine();
-
-    foreach (var scenario in scenarios)
+    if (rasterPipelines.Count == 0)
     {
-        var request = scenario.Request;
-
-        Console.WriteLine();
-        Console.WriteLine(new string('-', 70));
-        Console.WriteLine($"Scenario          : {scenario.Name}");
-        Console.WriteLine($"Input File        : {Path.GetFileName(request.InputPath)}");
-        Console.WriteLine($"Profile           : {request.Profile.Name}");
-        Console.WriteLine($"Intent            : {request.Profile.Intent}");
-        Console.WriteLine($"DPI               : {request.Profile.Dpi}");
-        Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
-        Console.WriteLine($"Compression       : {request.Profile.Compression}");
-        Console.WriteLine($"Output Base Path  : {request.OutputPath}");
-        Console.WriteLine(new string('-', 70));
+        Console.WriteLine("[UYARI] Raster pipeline bulunamadı. Raster benchmark atlandı.");
     }
+    else
+    {
+        foreach (var pipeline in rasterPipelines)
+        {
+            Console.WriteLine($"=== RASTER DATASET BENCHMARK ({pipeline.Name}) ===");
+            Console.WriteLine();
 
-    Console.WriteLine("Raster dataset benchmark tamamlandı.");
+            foreach (var scenario in scenarios)
+            {
+                var request = scenario.Request;
+
+                Console.WriteLine();
+                Console.WriteLine(new string('-', 70));
+                Console.WriteLine($"Scenario          : {scenario.Name}");
+                Console.WriteLine($"Input File        : {Path.GetFileName(request.InputPath)}");
+                Console.WriteLine($"Profile           : {request.Profile.Name}");
+                Console.WriteLine($"Intent            : {request.Profile.Intent}");
+                Console.WriteLine($"DPI               : {request.Profile.Dpi}");
+                Console.WriteLine($"Color Mode        : {request.Profile.ColorMode}");
+                Console.WriteLine($"Compression       : {request.Profile.Compression}");
+                Console.WriteLine($"Output Base Path  : {request.OutputPath}");
+                Console.WriteLine($"Pipeline          : {pipeline.Name}");
+                Console.WriteLine(new string('-', 70));
+
+                var results = await runner.RunAsync(pipeline, scenario);
+
+                var summary = BenchmarkStatistics.BuildSummary(
+                    $"RASTER BENCHMARK RAPORU - {pipeline.Name} - {Path.GetFileName(request.InputPath)} - {request.Profile.Name}",
+                    results);
+
+                reporter.PrintSummary(summary);
+
+                string benchmarkStatus = "Full";
+                string inputCategory = InferInputCategoryFromFileName(request.InputPath);
+                string pipelineType = InferPipelineType(pipeline.Name);
+
+                csvReporter.AppendSummary(
+                    csvReportPath,
+                    summary,
+                    pipeline.Name,
+                    Path.GetFileName(request.InputPath),
+                    inputCategory,
+                    request.Profile.Name,
+                    request.Profile.Intent.ToString(),
+                    pipelineType,
+                    results.LastOrDefault()?.OutputPath ?? request.OutputPath,
+                    request.Profile.Dpi,
+                    request.Profile.ColorMode.ToString(),
+                    request.Profile.Compression.ToString(),
+                    benchmarkStatus);
+
+                Console.WriteLine($"[CSV] Summary appended: {csvReportPath}");
+            }
+
+            Console.WriteLine($"Raster dataset benchmark tamamlandı: {pipeline.Name}");
+            Console.WriteLine();
+        }
+    }
 }
 else
 {
     Console.WriteLine("[UYARI] Raster scenario bulunamadı. Raster benchmark atlandı.");
 }
+
+Console.WriteLine();
 
 Console.WriteLine();
 
@@ -255,7 +305,7 @@ else
     Console.WriteLine("[UYARI] PDF scenario bulunamadı. PDF benchmark atlandı.");
 }
 
-*/
+
 
 if (wordScenarios.Count > 0 && wordPipelines.Count > 0)
 {
@@ -293,7 +343,7 @@ if (wordScenarios.Count > 0 && wordPipelines.Count > 0)
             {
                 "AsposeWordsDirectTiffPipeline" => "EvaluationOnly",
                 "LibreOfficeWordPdfBridgePipeline" => "BridgePipeline",
-                "SpireWordRenderMergePipeline" => "Full",
+                "SpireWordRenderMergePipeline" => "Experimental",
                 "GemBoxWordDirectTiffPipeline" => "EvaluationOnly",
                 "SyncfusionWordDirectTiffPipeline" => "Experimental",
                 _ => "Unknown"
@@ -408,10 +458,7 @@ else
 
 
 Console.WriteLine();
-Console.WriteLine("=== RASTER PARALLEL BENCHMARK ===");
-Console.WriteLine("[INFO] Raster parallel benchmark bu aşamada devre dışı.");
-
-
+Console.WriteLine("=== BENCHMARK RUN COMPLETED ===");
 
 static string InferInputCategoryFromFileName(string inputPath)
 {
@@ -459,6 +506,7 @@ static string InferPipelineType(string pipelineName)
 {
     return pipelineName switch
     {
+        "RasterMagickPipeline" => "DirectNativeTiff",
         "GhostscriptPipeline" => "DirectNativeTiff",
         "GhostscriptScaledPipeline" => "DirectNativeTiff",
         "PdfiumPipeline" => "RenderThenMerge",
