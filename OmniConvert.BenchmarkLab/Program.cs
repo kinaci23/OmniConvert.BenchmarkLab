@@ -57,8 +57,8 @@ var scenarios = samples.Count > 0
         samples,
         BuiltInProfiles.RasterMatrixProfiles,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1)
+        warmupRuns: 1,
+        measuredRuns: 5)
     : new List<BenchmarkScenario>();
 
 var pdfScenarios = pdfSamples.Count > 0
@@ -66,8 +66,8 @@ var pdfScenarios = pdfSamples.Count > 0
         pdfSamples,
         BuiltInProfiles.PdfMatrixProfiles,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1).ToList()
+        warmupRuns: 1,
+        measuredRuns: 5).ToList()
     : new List<BenchmarkScenario>();
 
 var wordScenarios = wordSamples.Count > 0
@@ -75,8 +75,8 @@ var wordScenarios = wordSamples.Count > 0
         wordSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1).ToList()
+        warmupRuns: 1,
+        measuredRuns: 5).ToList()
     : new List<BenchmarkScenario>();
 
 var excelScenarios = excelSamples.Count > 0
@@ -84,8 +84,8 @@ var excelScenarios = excelSamples.Count > 0
         excelSamples,
         BuiltInProfiles.OfficeAll,
         outputFolder,
-        warmupRuns: 0,
-        measuredRuns: 1).ToList()
+        warmupRuns: 1,
+        measuredRuns: 5).ToList()
     : new List<BenchmarkScenario>();
 
 pdfScenarios = pdfScenarios
