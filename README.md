@@ -2,7 +2,7 @@
 
 Production kararlarını desteklemek için tasarlanmış, **pipeline-odaklı** TIFF dönüşüm benchmark laboratuvarı.
 
-Bu proje; **raster/image → TIFF**, **PDF → TIFF**, **DOCX → TIFF** ve **XLSX → TIFF** dönüşümlerinde farklı motor ve pipeline yaklaşımlarını karşılaştırır. Amaç yalnızca “en hızlı motoru” bulmak değil, **her dosya türü için en uygun pipeline mimarisini** belirlemektir. Proje .NET 8 tabanlıdır. :contentReference[oaicite:0]{index=0}
+Bu proje; **raster/image → TIFF**, **PDF → TIFF**, **DOCX → TIFF** ve **XLSX → TIFF** dönüşümlerinde farklı motor ve pipeline yaklaşımlarını karşılaştırır. Amaç yalnızca “en hızlı motoru” bulmak değil, **her dosya türü için en uygun pipeline mimarisini** belirlemektir. Proje .NET 8 tabanlıdır. 
 
 ---
 
