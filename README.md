@@ -23,7 +23,7 @@ Benchmark çıktıları, daha sonra geliştirilen servis katmanında dosya tür�
 
 ## Mimari
 
-Proje, `Program.cs` içinden tüm benchmark akışını yöneten; senaryo üretimi, pipeline çalıştırma, doğrulama ve CSV raporlama yapan tek bir benchmark host olarak çalışır. Akışta `Benchmarking`, `Core`, `Inputs`, `Pipelines`, `Reporting` ve `Validation` katmanları aktif olarak kullanılır. :contentReference[oaicite:1]{index=1}
+Proje, `Program.cs` içinden tüm benchmark akışını yöneten; senaryo üretimi, pipeline çalıştırma, doğrulama ve CSV raporlama yapan tek bir benchmark host olarak çalışır. Akışta `Benchmarking`, `Core`, `Inputs`, `Pipelines`, `Reporting` ve `Validation` katmanları aktif olarak kullanılır. 
 
 | Katman / Alan | Sorumluluk |
 |---|---|
@@ -45,7 +45,7 @@ Benchmark host şu ana veri kaynaklarını kullanır:
 - `Inputs/word`
 - `Inputs/excel`
 
-ve çıktılarını tek bir output klasörüne yazar. `Program.cs` içinde raster, PDF, Word ve Excel örnekleri ayrı ayrı yüklenir; bunlardan scenario’lar oluşturulur ve ilgili pipeline listeleriyle benchmark edilir. Ayrıca benchmark sonuçları CSV’ye append edilir. Final benchmark ayarı mevcut kodda **warmupRuns: 1** ve **measuredRuns: 5** olarak görünmektedir. :contentReference[oaicite:2]{index=2}
+ve çıktılarını tek bir output klasörüne yazar. `Program.cs` içinde raster, PDF, Word ve Excel örnekleri ayrı ayrı yüklenir; bunlardan scenario’lar oluşturulur ve ilgili pipeline listeleriyle benchmark edilir. Ayrıca benchmark sonuçları CSV’ye append edilir. Final benchmark ayarı mevcut kodda **warmupRuns: 1** ve **measuredRuns: 5** olarak görünmektedir. 
 
 ---
 
@@ -61,7 +61,7 @@ Bu nedenle üç ana pipeline sınıfı vardır:
 | **BridgeViaPdf** | Belge önce PDF’e dönüştürülür, sonra TIFF üretilir |
 | **RenderThenMerge** | Sayfalar image olarak render edilir, sonra multipage TIFF oluşturulur |
 
-`InferPipelineType(...)` içinde bu sınıflandırma açık şekilde kullanılmaktadır. :contentReference[oaicite:3]{index=3}
+`InferPipelineType(...)` içinde bu sınıflandırma açık şekilde kullanılmaktadır. 
 
 ---
 
@@ -76,7 +76,7 @@ Projede şu benchmark fazları aktif olarak yer alır:
 | **DOCX → TIFF** | Word motorları ve pipeline’larının benchmark edilmesi |
 | **XLSX → TIFF** | Excel motorları ve pipeline’larının benchmark edilmesi |
 
-`Program.cs` içindeki pipeline listeleri ve scenario üretimi bu dört fazı açıkça göstermektedir. :contentReference[oaicite:4]{index=4}
+`Program.cs` içindeki pipeline listeleri ve scenario üretimi bu dört fazı açıkça göstermektedir. 
 
 ---
 
@@ -97,7 +97,7 @@ Projede şu benchmark fazları aktif olarak yer alır:
 | `MuPdfPipeline` | RenderThenMerge | Full |
 | `AsposePdfPipeline` | DirectNativeTiff | Limited |
 
-PDF benchmark akışında `MuPdfPipeline` için `PdfOcrBinary300` profilinde skip mantığı da bulunmaktadır. :contentReference[oaicite:5]{index=5}
+PDF benchmark akışında `MuPdfPipeline` için `PdfOcrBinary300` profilinde skip mantığı da bulunmaktadır. 
 
 ### Word
 
@@ -109,7 +109,7 @@ PDF benchmark akışında `MuPdfPipeline` için `PdfOcrBinary300` profilinde ski
 | `SyncfusionWordDirectTiffPipeline` | RenderThenMerge | Experimental |
 | `GemBoxWordDirectTiffPipeline` | DirectNativeTiff | EvaluationOnly |
 
-Word benchmark status sınıflandırması doğrudan `Program.cs` içinde tanımlanmıştır. :contentReference[oaicite:6]{index=6}
+Word benchmark status sınıflandırması doğrudan `Program.cs` içinde tanımlanmıştır. 
 
 ### Excel
 
@@ -120,7 +120,7 @@ Word benchmark status sınıflandırması doğrudan `Program.cs` içinde tanıml
 | `SyncfusionExcelRenderMergePipeline` | RenderThenMerge | Full |
 | `SpireExcelRenderMergePipeline` | RenderThenMerge | Full |
 
-Excel benchmark status sınıflandırması da `Program.cs` içinde açık şekilde tanımlanmıştır. :contentReference[oaicite:7]{index=7}
+Excel benchmark status sınıflandırması da `Program.cs` içinde açık şekilde tanımlanmıştır. 
 
 ---
 
@@ -130,7 +130,7 @@ Projede raster ve office benchmark’ları için built-in profile setleri kullan
 
 - `BuiltInProfiles.RasterMatrixProfiles`
 - `BuiltInProfiles.PdfMatrixProfiles`
-- `BuiltInProfiles.OfficeAll` :contentReference[oaicite:8]{index=8}
+- `BuiltInProfiles.OfficeAll` 
 
 ### Office profilleri
 
@@ -151,7 +151,7 @@ Projede raster ve office benchmark’ları için built-in profile setleri kullan
 
 ### Raster profilleri
 
-Raster benchmark, `BuiltInProfiles.RasterMatrixProfiles` kullanılarak çalıştırılır. :contentReference[oaicite:9]{index=9}
+Raster benchmark, `BuiltInProfiles.RasterMatrixProfiles` kullanılarak çalıştırılır. 
 
 ---
 
@@ -166,7 +166,7 @@ Benchmark sonuçları her scenario ve pipeline için özetlenir ve CSV’ye yaz�
 - error count
 - output validation sonucu
 
-Ayrıca sonuçlar `BenchmarkStatistics.BuildSummary(...)` ile özetlenip `CsvBenchmarkReporter` üzerinden CSV’ye eklenir. :contentReference[oaicite:10]{index=10}
+Ayrıca sonuçlar `BenchmarkStatistics.BuildSummary(...)` ile özetlenip `CsvBenchmarkReporter` üzerinden CSV’ye eklenir. 
 
 ---
 
@@ -194,7 +194,7 @@ Program akışı, input dosya isimlerinden kategori türetir.
 - `LandscapeExcel`
 - `MultiSheetExcel`
 
-Bu sınıflandırmalar `InferInputCategoryFromFileName(...)` ve `InferOfficeInputCategoryFromFileName(...)` içinde tanımlanmıştır. :contentReference[oaicite:11]{index=11}
+Bu sınıflandırmalar `InferInputCategoryFromFileName(...)` ve `InferOfficeInputCategoryFromFileName(...)` içinde tanımlanmıştır. 
 
 ---
 
@@ -205,14 +205,13 @@ Mevcut benchmark host, raster, PDF, Word ve Excel fazlarını tek çalıştırma
 - `warmupRuns: 1`
 - `measuredRuns: 5`
 
-kullanılmaktadır. Aynı dosyada benchmark sonuçları `benchmark_results.csv` dosyasına yazdırılır. :contentReference[oaicite:12]{index=12}
+kullanılmaktadır. Aynı dosyada benchmark sonuçları `benchmark_results.csv` dosyasına yazdırılır.
 
 ---
 
 ## Çalıştırma
 
-Repo bir .NET 8 console benchmark uygulaması olarak yapılandırılmıştır. :contentReference[oaicite:13]{index=13}
-
+Repo bir .NET 8 console benchmark uygulaması olarak yapılandırılmıştır. 
 Genel akış:
 
 1. Input klasörlerini doldur
